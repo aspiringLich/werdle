@@ -10,6 +10,39 @@ use rand::seq::SliceRandom;
 use crate::parsing::load_into_vec;
 mod parsing;
 
+// im sorry
+/// Maps Chars to loction on the printed keybord
+const LAYOUT: [(char, (i32, i32)); 26] = [
+    ('Q', (0, 0)),
+    ('W', (2, 0)),
+    ('E', (4, 0)),
+    ('R', (6, 0)),
+    ('T', (8, 0)),
+    ('Y', (10, 0)),
+    ('U', (12, 0)),
+    ('I', (14, 0)),
+    ('O', (16, 0)),
+    ('P', (18, 0)),
+    //
+    ('A', (1, 1)),
+    ('S', (3, 1)),
+    ('D', (5, 1)),
+    ('F', (7, 1)),
+    ('G', (9, 1)),
+    ('H', (11, 1)),
+    ('J', (13, 1)),
+    ('K', (15, 1)),
+    ('L', (17, 1)),
+    //
+    ('Z', (2, 2)),
+    ('X', (4, 2)),
+    ('C', (6, 2)),
+    ('V', (8, 2)),
+    ('B', (10, 2)),
+    ('N', (12, 2)),
+    ('M', (14, 2)),
+];
+
 // fancy ANSI formatting
 enum ANSI {
     Bold,
@@ -32,6 +65,13 @@ enum Loc {
 enum Preset {
     Green,
     Yellow,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum LettorState {
+    Location,
+    Lettor,
+    Wrong,
 }
 
 impl Display for ANSI {
@@ -139,6 +179,9 @@ fn main() {
             .choose(&mut rand::thread_rng())
             .unwrap()
             .to_owned();
+
+        let mut tried_letters = [LettorState::Wrong; 26];
+
         let c_freq: [u8; 27] = {
             let mut out: [u8; 27] = [0; 27];
             for item in answer.chars() {
@@ -153,13 +196,14 @@ fn main() {
     ***********
     ***********        Q W E R T Y U I O P
     ***********         A S D F G H J K L
-    ***********          Z X C V B N M <- ignore this for now thanks
-    ***********                            (ill add it in later)
+    ***********          Z X C V B N M
+    ***********
 ",
             ANSI::Move(Loc::Start)
         );
         let mut itr = 0;
         while itr < 6 {
+            refresh_keybord(tried_letters);
             print!("{}", ANSI::Move(Loc::Word(itr)));
             stdout().flush().unwrap();
             let attempt: String = get_word();
@@ -184,7 +228,11 @@ fn main() {
                         ANSI::Preset(Preset::Green),
                         (letter as u8 - 32) as char
                     );
-                    freq[letter as usize - 'a' as usize] -= 1;
+
+                    let index = letter as usize - 'a' as usize;
+
+                    tried_letters[index] = LettorState::Location;
+                    freq[index] -= 1;
                     continue;
                 }
                 print!("{}{}", ANSI::Clear, (letter as u8 - 32) as char);
@@ -199,13 +247,22 @@ fn main() {
                         ANSI::Preset(Preset::Yellow),
                         (letter as u8 - 32) as char
                     );
-                    freq[letter as usize - 'a' as usize] -= 1;
+
+                    let index = letter as usize - 'a' as usize;
+
+                    if tried_letters[index] != LettorState::Location {
+                        tried_letters[index] = LettorState::Lettor;
+                    }
+
+                    freq[index] -= 1;
                     continue;
                 }
                 print!("\x1b[1C");
             }
+
             itr += 1;
             print!("{}", ANSI::Clear);
+
             if attempt == answer {
                 break;
             }
@@ -223,4 +280,26 @@ fn main() {
         while ch.getch().unwrap() != 13 {}
         print!("\r\x1b[2A\x1b[0J")
     }
+}
+
+fn refresh_keybord(state: [LettorState; 26]) {
+    for (index, i) in state.iter().enumerate() {
+        let letter = (index as u8 + 'A' as u8) as char;
+
+        let move_factor = LAYOUT.iter().find(|x| x.0 == letter).unwrap().1;
+        print!(
+            "{}",
+            ANSI::MoveCursor(13 + move_factor.1, 24 + move_factor.0)
+        );
+
+        match i {
+            LettorState::Location => print!("{}{}", ANSI::Preset(Preset::Green), letter),
+            LettorState::Lettor => print!("{}{}", ANSI::Preset(Preset::Yellow), letter),
+            LettorState::Wrong => print!("{}", letter),
+        }
+
+        print!("\x1b[0m");
+    }
+
+    stdout().flush().unwrap();
 }
