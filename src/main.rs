@@ -134,7 +134,7 @@ fn get_word() -> String {
                     stdout().flush().unwrap();
                 }
             }
-            10 | 13 => return "jank workaround lol dont mind me".to_owned(),
+            10 | 13 => return "jank workaround lol dont mind me".to_string(),
             _ => continue,
         }
     }
@@ -213,6 +213,7 @@ fn main() {
             print!("{}", ANSI::Move(Loc::Word(itr)));
             stdout().flush().unwrap();
             let attempt: String = get_word();
+            if attempt == "jank workaround lol dont mind me".to_string() { break; }
             // oh yay we found it
 
             if accepted_words.binary_search(&attempt).is_err() {
