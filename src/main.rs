@@ -81,7 +81,7 @@ fn get_word() -> String {
                 out[len] = key as char;
                 len += 1;
             }
-            8 => {
+            8 | 33 => {
                 if len > 0 {
                     len -= 1;
                     print!("{}*{}", ANSI::Back, ANSI::Back);
