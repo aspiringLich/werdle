@@ -121,6 +121,12 @@ fn get_word() -> String {
                 out[len] = key as char;
                 len += 1;
             }
+            65..=90 => {
+                print!("{}", key as char);
+                stdout().flush().unwrap();
+                out[len] = (key + 32) as char;
+                len += 1;
+            }
             8 | 33 => {
                 if len > 0 {
                     len -= 1;
@@ -208,10 +214,6 @@ fn main() {
             stdout().flush().unwrap();
             let attempt: String = get_word();
             // oh yay we found it
-
-            if attempt == *"jank workaround lol dont mind me" {
-                break;
-            }
 
             if accepted_words.binary_search(&attempt).is_err() {
                 print!("{}***********", ANSI::Move(Loc::Word(itr)));
